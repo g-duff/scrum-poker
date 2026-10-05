@@ -240,3 +240,76 @@ describe('POST /api/sessions/:id/participants', () => {
     expect(expectErrorCode(res)).toBe('not_found');
   });
 });
+
+describe('GET /api/sessions/:id', () => {
+  async function createSessionAndJoin(
+    app: ReturnType<typeof createApp>,
+    displayName = 'Ana',
+  ) {
+    const createRes = await request(app).post('/api/sessions').send({});
+    const { id: sessionId } = expectSuccess(createRes) as { id: string };
+
+    const joinRes = await request(app)
+      .post(`/api/sessions/${sessionId}/participants`)
+      .send({ displayName });
+    const { participantId, token } = expectSuccess(joinRes) as {
+      participantId: string;
+      token: string;
+    };
+
+    return { sessionId, participantId, token };
+  }
+
+  it('returns the snapshot for a valid token', async () => {
+    const { app } = createTestApp();
+    const { sessionId, participantId, token } =
+      await createSessionAndJoin(app);
+
+    const res = await request(app)
+      .get(`/api/sessions/${sessionId}`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(expectSuccess(res)).toMatchObject({
+      id: sessionId,
+      round: 1,
+      state: 'voting',
+      participants: [
+        { id: participantId, name: 'Ana', active: true, hasVoted: false },
+      ],
+    });
+  });
+
+  it('returns unauthorized with a missing token', async () => {
+    const { app } = createTestApp();
+    const { sessionId } = await createSessionAndJoin(app);
+
+    const res = await request(app).get(`/api/sessions/${sessionId}`);
+
+    expect(res.status).toBe(401);
+    expect(expectErrorCode(res)).toBe('unauthorized');
+  });
+
+  it('returns unauthorized with an unknown token', async () => {
+    const { app } = createTestApp();
+    const { sessionId } = await createSessionAndJoin(app);
+
+    const res = await request(app)
+      .get(`/api/sessions/${sessionId}`)
+      .set('Authorization', 'Bearer wrong-token');
+
+    expect(res.status).toBe(401);
+    expect(expectErrorCode(res)).toBe('unauthorized');
+  });
+
+  it('returns not_found for an unknown session', async () => {
+    const { app } = createTestApp();
+
+    const res = await request(app)
+      .get('/api/sessions/123e4567-e89b-12d3-a456-426614174000')
+      .set('Authorization', 'Bearer anything');
+
+    expect(res.status).toBe(404);
+    expect(expectErrorCode(res)).toBe('not_found');
+  });
+});

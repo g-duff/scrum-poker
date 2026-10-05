@@ -2,7 +2,12 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import express from 'express';
 import type { NextFunction, Request, Response } from 'express';
-import type { ApiError, ApiResponse, Participant } from '@scrum-poker/shared';
+import type {
+  ApiError,
+  ApiResponse,
+  Participant,
+  SessionSnapshot,
+} from '@scrum-poker/shared';
 import {
   createSessionBodySchema,
   DEFAULT_DECK,
@@ -12,7 +17,8 @@ import type { ZodError } from 'zod';
 import { hashToken } from '#src/core/auth';
 import { resolveDisplayName } from '#src/core/names';
 import { createNewSession } from '#src/core/session';
-import { generateToken } from '#src/shell/auth';
+import { buildSessionSnapshot } from '#src/core/snapshot';
+import { authenticateParticipant, generateToken } from '#src/shell/auth';
 import { findActiveSession } from '#src/shell/session';
 import type { SessionStore } from '#src/shell/sessionStore';
 
@@ -130,6 +136,32 @@ export function createApp(
       res.status(201).json(body);
     },
   );
+
+  app.get('/api/sessions/:id', async (req: Request, res: Response) => {
+    const auth = await authenticateParticipant(
+      store,
+      getSessionIdParam(req),
+      req.header('authorization'),
+    );
+
+    switch (auth.outcome) {
+      case 'not_found':
+        sendError(res, 404, 'not_found', 'Session not found');
+        return;
+      case 'unauthorized':
+        sendError(res, 401, 'unauthorized', 'Missing or unknown token');
+        return;
+      case 'ok': {
+        const snapshot = buildSessionSnapshot(auth.session, auth.participantId);
+        const body: ApiResponse<SessionSnapshot> = {
+          data: snapshot,
+          error: null,
+        };
+        res.status(200).json(body);
+        return;
+      }
+    }
+  });
 
   app.use('/api', (_req: Request, res: Response) => {
     const body: ApiResponse<null> = {
