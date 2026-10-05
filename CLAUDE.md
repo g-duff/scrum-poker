@@ -104,6 +104,9 @@ Current: slice 2, create and join (branch `slice-2-create-and-join`)
 
 ### Finishing a slice
 
+Before giving the acceptance checks, do a style pass over any new UI the slice
+added, matching the established design tokens/components.
+
 Give me the slice's manual acceptance checks as a numbered list with the exact
 steps for each (URLs, commands, which windows to use). Wait for my confirmation.
 Do not merge or push; I will do that.

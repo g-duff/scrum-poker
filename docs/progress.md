@@ -1,25 +1,10 @@
 # Progress
 
-Completed: slice 1
+Completed: slice 1, slice 2
 
-Current: slice 2, create and join (branch `slice-2-create-and-join`)
+Current: style pass (branch `style-pass`)
 
-- [x] 1. Shared domain types (Session, Participant, Vote, SessionSnapshot)
-- [x] 2. Shared Zod schemas for create-session and join-participant bodies
-- [x] 3. `SessionStore` interface and its reusable contract test suite
-- [x] 4. Move existing server/src files into src/core and src/shell per
-       coding standards (mechanical move, no behaviour change)
-- [x] 5. In-memory `SessionStore` implementation against the contract suite
-- [x] 6. `SessionNotifier` interface and in-process implementation
-- [x] 7. Nest participants and votes into Session (the one stored aggregate),
-       updating domain.ts and existing store fixtures/clones
-- [x] 8. Token auth: generation, hashing, and Bearer-token middleware
-- [x] 9. Create-session endpoint (`POST /api/sessions`)
-- [x] 10. Join endpoint (`POST /api/sessions/:id/participants`), name validation and suffixing
-- [x] 11. Snapshot endpoint (`GET /api/sessions/:id`)
-- [x] 12. SSE events endpoint (`GET /api/sessions/:id/events`)
-- [x] 13. Client `SessionConnection` (EventSource wrapper)
-- [x] 14. Home page: create-session form wired to the API
-- [x] 15. Session page: localStorage identity util (token + participant id)
-- [x] 16. Session page: join form (shown on 401) wired to the API
-- [x] 17. Session page: live participant list rendered from the snapshot stream
+- [x] 1. Global design tokens and base styles
+- [ ] 2. Style the Home page
+- [ ] 3. Style the Session page: join form and not-found view
+- [ ] 4. Style the Session page: ready view (participant list)
