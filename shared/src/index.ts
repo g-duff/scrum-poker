@@ -7,3 +7,10 @@ export type {
   SessionSnapshot,
   SessionSnapshotParticipant,
 } from '#src/domain';
+export {
+  displayNameSchema,
+  cardSchema,
+  deckSchema,
+  createSessionBodySchema,
+  joinParticipantBodySchema,
+} from '#src/schemas';
