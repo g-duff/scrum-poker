@@ -17,15 +17,13 @@ The root scripts are defined in the spec (Tooling). The one you need most:
 
 ## Conventions
 
-Follow the spec's Tooling section. The rules that are easiest to miss:
+Follow the spec's Tooling section and `docs/coding-standards.md` (code style
+and architecture: functional core/imperative shell, factory functions over
+classes, and the language/module constraints). The process rules that are
+easiest to miss:
 
-- Node runs the TypeScript in `server/` and `shared/` directly, so use erasable
-  syntax only (no enums, namespaces or parameter properties), `import type` for
-  types, and `.ts` extensions on relative imports.
 - ESLint is strict and runs with zero warnings allowed. Do not disable rules to
   get past them; ask me instead.
-- `web/` and `server/` never import each other. `process.env` is read only in
-  `server/src/config.ts`. Use the logger, never `console`.
 - Do not add features, dependencies or configuration that the spec does not
   mention. Ask first.
 
