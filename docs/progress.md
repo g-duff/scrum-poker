@@ -17,7 +17,7 @@ Current: slice 1, walking skeleton (branch `slice-1-walking-skeleton`)
 - [x] 4. web/: Vite + React app, React Router with / and /s/:id, home page
       that fetches /api/health and shows the status, dev proxy for /api, and
       an RTL test
-- [ ] 5. Static serving + Dockerfile: server serves web/'s built output from
-      /, SPA fallback for /s/:id, multi-stage Dockerfile (slim Node 26,
-      non-root user, HEALTHCHECK on /api/health), and manual docker
+- [x] 5. Static serving + Containerfile: server serves web/'s built output
+      from /, SPA fallback for /s/:id, multi-stage Containerfile (slim Node
+      26, non-root user, HEALTHCHECK on /api/health), and manual container
       build/run check

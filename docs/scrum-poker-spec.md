@@ -464,7 +464,7 @@ not tripped up. Limits and the default deck are constants in `shared/`.
 
 **Runtime and language**
 
-- Node 26, pinned in `.nvmrc`, `engines` and the Docker base image.
+- Node 26, pinned in `.nvmrc`, `engines` and the container base image.
 - Native type stripping: the server runs its `.ts` files directly with `node`, with
   no build step. `tsc` only type-checks (`noEmit`), and `web/` builds with Vite.
 - Node only erases types, so `server/` and `shared/` follow three rules:
@@ -563,9 +563,11 @@ with these defaults, so they can be checked in seconds:
 ### Slice 1: Walking skeleton
 
 The monorepo with `server/`, `web/` and `shared/`, Express serving the built React
-page from `/`, `GET /api/health`, and a Dockerfile.
+page from `/`, `GET /api/health`, and a Containerfile.
 
-- [ ] `docker build` and `docker run` each succeed with a single command
+- [ ] The container image builds and runs with a single command each (for
+      example `podman build .` / `podman run`, which auto-detect the
+      `Containerfile`; Docker needs `docker build -f Containerfile .`)
 - [ ] Opening the container's URL shows the React page
 - [ ] The page shows the server's health status, fetched from `/api/health`
 - [ ] Opening a deep link such as `/s/anything` still loads the app
