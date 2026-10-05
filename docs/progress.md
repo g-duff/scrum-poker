@@ -13,7 +13,7 @@ Current: slice 2, create and join (branch `slice-2-create-and-join`)
 - [x] 6. `SessionNotifier` interface and in-process implementation
 - [x] 7. Nest participants and votes into Session (the one stored aggregate),
        updating domain.ts and existing store fixtures/clones
-- [ ] 8. Token auth: generation, hashing, and Bearer-token middleware
+- [x] 8. Token auth: generation, hashing, and Bearer-token middleware
 - [ ] 9. Create-session endpoint (`POST /api/sessions`)
 - [ ] 10. Join endpoint (`POST /api/sessions/:id/participants`), name validation and suffixing
 - [ ] 11. Snapshot endpoint (`GET /api/sessions/:id`)
