@@ -6,7 +6,14 @@ import type { SessionStore } from '#src/shell/sessionStore';
 // by mutating one after handing it to create(). A networked store would
 // get this for free from serialization; here it must be explicit.
 function cloneSession(session: Session): Session {
-  return { ...session, deck: [...session.deck] };
+  return {
+    ...session,
+    deck: [...session.deck],
+    participants: session.participants.map((participant) => ({
+      ...participant,
+    })),
+    votes: session.votes.map((vote) => ({ ...vote })),
+  };
 }
 
 export function createInMemorySessionStore(): SessionStore {

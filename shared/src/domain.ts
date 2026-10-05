@@ -1,11 +1,3 @@
-export interface Session {
-  id: string;
-  deck: string[];
-  state: 'voting' | 'revealed';
-  roundNumber: number;
-  expiresAt: Date;
-}
-
 export interface Participant {
   id: string;
   sessionId: string;
@@ -18,6 +10,19 @@ export interface Vote {
   sessionId: string;
   participantId: string;
   value: string;
+}
+
+// The whole session is stored as one in-memory object behind SessionStore
+// (per the Architecture section), so participants and votes are nested
+// here rather than kept in separate stores.
+export interface Session {
+  id: string;
+  deck: string[];
+  state: 'voting' | 'revealed';
+  roundNumber: number;
+  expiresAt: Date;
+  participants: Participant[];
+  votes: Vote[];
 }
 
 export interface SessionSnapshotParticipant {

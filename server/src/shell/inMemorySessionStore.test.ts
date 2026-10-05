@@ -12,6 +12,8 @@ function makeSession(overrides: Partial<Session> = {}): Session {
     state: 'voting',
     roundNumber: 1,
     expiresAt: new Date(Date.now() + 60_000),
+    participants: [],
+    votes: [],
     ...overrides,
   };
 }

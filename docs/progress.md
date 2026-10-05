@@ -11,13 +11,15 @@ Current: slice 2, create and join (branch `slice-2-create-and-join`)
        coding standards (mechanical move, no behaviour change)
 - [x] 5. In-memory `SessionStore` implementation against the contract suite
 - [x] 6. `SessionNotifier` interface and in-process implementation
-- [ ] 7. Token auth: generation, hashing, and Bearer-token middleware
-- [ ] 8. Create-session endpoint (`POST /api/sessions`)
-- [ ] 9. Join endpoint (`POST /api/sessions/:id/participants`), name validation and suffixing
-- [ ] 10. Snapshot endpoint (`GET /api/sessions/:id`)
-- [ ] 11. SSE events endpoint (`GET /api/sessions/:id/events`)
-- [ ] 12. Client `SessionConnection` (EventSource wrapper)
-- [ ] 13. Home page: create-session form wired to the API
-- [ ] 14. Session page: localStorage identity util (token + participant id)
-- [ ] 15. Session page: join form (shown on 401) wired to the API
-- [ ] 16. Session page: live participant list rendered from the snapshot stream
+- [x] 7. Nest participants and votes into Session (the one stored aggregate),
+       updating domain.ts and existing store fixtures/clones
+- [ ] 8. Token auth: generation, hashing, and Bearer-token middleware
+- [ ] 9. Create-session endpoint (`POST /api/sessions`)
+- [ ] 10. Join endpoint (`POST /api/sessions/:id/participants`), name validation and suffixing
+- [ ] 11. Snapshot endpoint (`GET /api/sessions/:id`)
+- [ ] 12. SSE events endpoint (`GET /api/sessions/:id/events`)
+- [ ] 13. Client `SessionConnection` (EventSource wrapper)
+- [ ] 14. Home page: create-session form wired to the API
+- [ ] 15. Session page: localStorage identity util (token + participant id)
+- [ ] 16. Session page: join form (shown on 401) wired to the API
+- [ ] 17. Session page: live participant list rendered from the snapshot stream
