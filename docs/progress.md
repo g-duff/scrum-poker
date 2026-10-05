@@ -20,6 +20,6 @@ Current: slice 2, create and join (branch `slice-2-create-and-join`)
 - [x] 12. SSE events endpoint (`GET /api/sessions/:id/events`)
 - [x] 13. Client `SessionConnection` (EventSource wrapper)
 - [x] 14. Home page: create-session form wired to the API
-- [ ] 15. Session page: localStorage identity util (token + participant id)
+- [x] 15. Session page: localStorage identity util (token + participant id)
 - [ ] 16. Session page: join form (shown on 401) wired to the API
 - [ ] 17. Session page: live participant list rendered from the snapshot stream
