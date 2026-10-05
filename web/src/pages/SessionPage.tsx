@@ -9,6 +9,9 @@ import {
 import type { SessionConnection } from '#src/shell/sessionConnection';
 import { createLocalStorageSessionIdentityStore } from '#src/shell/sessionIdentity';
 import { createSseSessionConnection } from '#src/shell/sseSessionConnection';
+import shared from '#src/styles/shared.module.css';
+import { cx } from '#src/styles/cx';
+import styles from '#src/pages/SessionPage.module.css';
 
 const identityStore = createLocalStorageSessionIdentityStore();
 
@@ -41,34 +44,58 @@ function JoinForm({
   }
 
   return (
-    <main>
-      <h1>Scrum Poker</h1>
-      <h2>Join this session</h2>
-      <form onSubmit={handleSubmit}>
-        <label htmlFor="displayName">Your name</label>
-        <input
-          id="displayName"
-          value={displayName}
-          onChange={(event) => {
-            setDisplayName(event.target.value);
-          }}
-        />
-        {error !== null && <p role="alert">{error}</p>}
-        <button type="submit" disabled={submitting}>
-          Join
-        </button>
-      </form>
+    <main className={cx(shared.wrap)}>
+      <h1 className={cx(styles.title)}>Scrum Poker</h1>
+      <div className={cx(shared.panel)}>
+        <h2 className={cx(styles.subtitle)}>Join this session</h2>
+        <form onSubmit={handleSubmit}>
+          <label htmlFor="displayName" className={cx(shared.label)}>
+            Your name
+          </label>
+          <div className={cx(shared.row)}>
+            <input
+              id="displayName"
+              className={cx(shared.textInput)}
+              value={displayName}
+              onChange={(event) => {
+                setDisplayName(event.target.value);
+              }}
+            />
+            <button
+              type="submit"
+              className={cx(shared.buttonPrimary)}
+              disabled={submitting}
+            >
+              Join
+            </button>
+          </div>
+          {error !== null && (
+            <p role="alert" className={cx(shared.note, shared.noteErr)}>
+              {error}
+            </p>
+          )}
+        </form>
+      </div>
     </main>
   );
 }
 
 function NotFound() {
   return (
-    <main>
-      <h1>Scrum Poker</h1>
-      <p>Session not found</p>
-      <p>It may have expired or the link may be wrong.</p>
-      <Link to="/">Create a new session</Link>
+    <main className={cx(shared.wrap)}>
+      <h1 className={cx(styles.title)}>Scrum Poker</h1>
+      <div className={cx(shared.panel)}>
+        <p className={cx(styles.notFoundLead)}>Session not found</p>
+        <p className={cx(shared.muted)}>
+          It may have expired or the link may be wrong.
+        </p>
+        <Link
+          to="/"
+          className={cx(shared.buttonPrimary, styles.createLink)}
+        >
+          Create a new session
+        </Link>
+      </div>
     </main>
   );
 }
@@ -207,8 +234,8 @@ export function SessionPage({
   switch (state.phase) {
     case 'loading':
       return (
-        <main>
-          <h1>Scrum Poker</h1>
+        <main className={cx(shared.wrap)}>
+          <h1 className={cx(styles.title)}>Scrum Poker</h1>
         </main>
       );
     case 'not-found':
