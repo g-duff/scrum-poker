@@ -172,7 +172,7 @@ Session, voting:
 
 ```
 +----------------------------------------------------------+
-| Round 3 - Voting              [ Copy link ]  [ Leave ]   |
+| Voting                         [ Copy link ]  [ Leave ]   |
 |----------------------------------------------------------|
 | Participants                                             |
 |   Ana (you)   voted                                      |
@@ -197,7 +197,7 @@ Session, revealed:
 
 ```
 +----------------------------------------------------------+
-| Round 3 - Revealed            [ Copy link ]  [ Leave ]   |
+| Revealed                       [ Copy link ]  [ Leave ]   |
 |----------------------------------------------------------|
 | Votes                                                    |
 |   5           Ana (you), Mei                             |
