@@ -10,7 +10,7 @@ Current: slice 2, create and join (branch `slice-2-create-and-join`)
 - [x] 4. Move existing server/src files into src/core and src/shell per
        coding standards (mechanical move, no behaviour change)
 - [x] 5. In-memory `SessionStore` implementation against the contract suite
-- [ ] 6. `SessionNotifier` interface and in-process implementation
+- [x] 6. `SessionNotifier` interface and in-process implementation
 - [ ] 7. Token auth: generation, hashing, and Bearer-token middleware
 - [ ] 8. Create-session endpoint (`POST /api/sessions`)
 - [ ] 9. Join endpoint (`POST /api/sessions/:id/participants`), name validation and suffixing
