@@ -12,6 +12,13 @@ native type stripping and the single-container architecture):
 - `server/` and `shared/` run as `.ts` directly under Node, so: erasable
   syntax only (no enums, namespaces or parameter properties), `import type`
   for types, and `.ts` extensions on relative imports.
+- `web/` has both `.ts` and `.tsx` files under `#src`, so its `package.json`
+  `imports` map alone (array of extensions) is enough for `tsc` but not for
+  Vite/vitest, which only resolves the first array alternative. `web/`
+  additionally declares a `resolve.alias` in `vite.config.ts` mapping `#src`
+  to `./src`, so Vite's own extension resolution (`.tsx`/`.ts`) takes over
+  for dev, build and tests. Both configs stay in sync; this is the accepted
+  pattern for `web/`, not a one-off workaround.
 - `web/` and `server/` never import each other.
 - `process.env` is read only in `server/src/config.ts`.
 - Use the logger, never `console`.
