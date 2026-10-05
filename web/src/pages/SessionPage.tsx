@@ -108,19 +108,22 @@ function ParticipantList({
   yourParticipantId: string;
 }) {
   return (
-    <section>
-      <h2>Participants</h2>
-      <ul>
+    <section className={cx(shared.panel)}>
+      <h2 className={cx(shared.sectionLabel)}>Participants</h2>
+      <div className={cx(shared.list)}>
         {participants.map((participant) => (
-          <li key={participant.id}>
-            {participant.name}
-            {participant.id === yourParticipantId ? ' (you)' : ''}
-            {'  '}
-            {participant.hasVoted ? 'voted' : 'not voted'}
-            {participant.active ? '' : '  (inactive)'}
-          </li>
+          <div key={participant.id} className={cx(shared.rowCard)}>
+            <span>
+              {participant.name}
+              {participant.id === yourParticipantId ? ' (you)' : ''}
+            </span>
+            <span className={cx(shared.muted)}>
+              {participant.hasVoted ? 'voted' : 'not voted'}
+              {participant.active ? '' : '  (inactive)'}
+            </span>
+          </div>
         ))}
-      </ul>
+      </div>
     </section>
   );
 }
@@ -251,14 +254,16 @@ export function SessionPage({
     case 'ready':
       if (state.snapshot === null) {
         return (
-          <main>
-            <p>Loading session...</p>
+          <main className={cx(shared.wrap)}>
+            <p className={cx(shared.muted)}>Loading session...</p>
           </main>
         );
       }
       return (
-        <main>
-          <h1>{state.snapshot.state === 'revealed' ? 'Revealed' : 'Voting'}</h1>
+        <main className={cx(shared.wrap)}>
+          <h1 className={cx(styles.title)}>
+            {state.snapshot.state === 'revealed' ? 'Revealed' : 'Voting'}
+          </h1>
           <ParticipantList
             participants={state.snapshot.participants}
             yourParticipantId={state.identity.participantId}

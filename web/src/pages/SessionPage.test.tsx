@@ -159,7 +159,8 @@ describe('SessionPage', () => {
     });
     expect(screen.getByText(/Ana \(you\)/)).toBeInTheDocument();
     expect(screen.getByText(/not voted/)).toBeInTheDocument();
-    expect(screen.getByText(/Raj/)).toHaveTextContent('(inactive)');
+    const raj = screen.getByText('Raj').closest('div');
+    expect(raj).toHaveTextContent('(inactive)');
   });
 
   it('closes the live connection on unmount', async () => {
