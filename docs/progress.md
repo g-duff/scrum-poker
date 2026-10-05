@@ -8,7 +8,7 @@ Current: slice 1, walking skeleton (branch `slice-1-walking-skeleton`)
       tsconfig, .mise.toml/.nvmrc pinning Node 26, ESLint flat config +
       Prettier, root scripts (dev/build/typecheck/lint/test/check), the
       no-restricted-imports separation rule wired, packages still empty
-- [ ] 2. shared/ package: minimal placeholder, its own tsconfig following the
+- [x] 2. shared/ package: minimal placeholder, its own tsconfig following the
       three erasable-syntax rules, and a passing vitest test
 - [ ] 3. server/: Express 5 app with GET /api/health in the response
       envelope, a catch-all 404 not_found for unknown /api routes, pino
