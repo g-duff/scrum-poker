@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Session } from '@scrum-poker/shared';
-import type { SessionStore } from '#src/sessionStore';
+import type { SessionStore } from '#src/shell/sessionStore';
 
 function makeSession(overrides: Partial<Session> = {}): Session {
   return {

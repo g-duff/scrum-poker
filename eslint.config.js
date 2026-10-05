@@ -88,9 +88,25 @@ export default tseslint.config(
     },
   },
   {
-    files: ['server/src/config.ts'],
+    files: ['server/src/shell/config.ts'],
     rules: {
       'no-restricted-properties': 'off',
+    },
+  },
+  {
+    files: ['server/src/core/**/*.ts', 'web/src/core/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/shell/*', '../shell/*', '#src/shell/*'],
+              message: 'core/ may not import shell/',
+            },
+          ],
+        },
+      ],
     },
   },
   {

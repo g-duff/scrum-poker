@@ -7,7 +7,7 @@ Current: slice 2, create and join (branch `slice-2-create-and-join`)
 - [x] 1. Shared domain types (Session, Participant, Vote, SessionSnapshot)
 - [x] 2. Shared Zod schemas for create-session and join-participant bodies
 - [x] 3. `SessionStore` interface and its reusable contract test suite
-- [ ] 4. Move existing server/src files into src/core and src/shell per
+- [x] 4. Move existing server/src files into src/core and src/shell per
        coding standards (mechanical move, no behaviour change)
 - [ ] 5. In-memory `SessionStore` implementation against the contract suite
 - [ ] 6. `SessionNotifier` interface and in-process implementation

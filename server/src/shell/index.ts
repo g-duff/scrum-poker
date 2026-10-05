@@ -1,7 +1,7 @@
-import { createApp } from '#src/app';
-import { config } from '#src/config';
-import { logger } from '#src/logger';
-import { defaultWebDistPath } from '#src/webDistPath';
+import { createApp } from '#src/shell/app';
+import { config } from '#src/shell/config';
+import { logger } from '#src/shell/logger';
+import { defaultWebDistPath } from '#src/shell/webDistPath';
 
 const app = createApp(defaultWebDistPath);
 

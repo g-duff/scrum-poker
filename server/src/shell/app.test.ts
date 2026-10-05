@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import request from 'supertest';
-import { createApp } from '#src/app';
+import { createApp } from '#src/shell/app';
 
 function createTestDist() {
   const dir = mkdtempSync(path.join(tmpdir(), 'web-dist-'));
