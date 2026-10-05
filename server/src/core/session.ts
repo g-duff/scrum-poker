@@ -15,3 +15,7 @@ export function createNewSession(
     votes: [],
   };
 }
+
+export function isSessionExpired(session: Session, now: Date): boolean {
+  return session.expiresAt <= now;
+}

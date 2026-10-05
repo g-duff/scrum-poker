@@ -1,10 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import type { Session } from '@scrum-poker/shared';
-import {
-  findParticipantByTokenHash,
-  hashToken,
-  isValidUuid,
-} from '#src/core/auth';
+import { findParticipantByTokenHash, hashToken } from '#src/core/auth';
+import { findActiveSession } from '#src/shell/session';
 import type { SessionStore } from '#src/shell/sessionStore';
 
 export function generateToken(): string {
@@ -28,11 +25,7 @@ export async function authenticateParticipant(
   sessionId: string,
   authorizationHeader: string | undefined,
 ): Promise<AuthResult> {
-  if (!isValidUuid(sessionId)) {
-    return { outcome: 'not_found' };
-  }
-
-  const session = await store.get(sessionId);
+  const session = await findActiveSession(store, sessionId);
   if (!session) {
     return { outcome: 'not_found' };
   }

@@ -64,6 +64,36 @@ describe('authenticateParticipant', () => {
     expect(result).toEqual({ outcome: 'not_found' });
   });
 
+  it('returns not_found for an expired session', async () => {
+    const store = createInMemorySessionStore();
+    const token = 'ana-token';
+    await store.create({
+      id: sessionId,
+      deck: ['1'],
+      state: 'voting',
+      roundNumber: 1,
+      expiresAt: new Date(Date.now() - 1000),
+      participants: [
+        {
+          id: 'p1',
+          sessionId,
+          displayName: 'Ana',
+          tokenHash: hashToken(token),
+          lastSeenAt: new Date(),
+        },
+      ],
+      votes: [],
+    });
+
+    const result = await authenticateParticipant(
+      store,
+      sessionId,
+      `Bearer ${token}`,
+    );
+
+    expect(result).toEqual({ outcome: 'not_found' });
+  });
+
   it('returns unauthorized when the header is missing', async () => {
     const store = await createStoreWithParticipant('ana-token');
 

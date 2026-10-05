@@ -153,3 +153,90 @@ describe('POST /api/sessions', () => {
     expect(expectErrorCode(res)).toBe('payload_too_large');
   });
 });
+
+describe('POST /api/sessions/:id/participants', () => {
+  async function createSession(app: ReturnType<typeof createApp>) {
+    const res = await request(app).post('/api/sessions').send({});
+    const { id } = expectSuccess(res) as { id: string };
+    return id;
+  }
+
+  it('joins with the given display name', async () => {
+    const { app } = createTestApp();
+    const sessionId = await createSession(app);
+
+    const res = await request(app)
+      .post(`/api/sessions/${sessionId}/participants`)
+      .send({ displayName: 'Ana' });
+
+    expect(res.status).toBe(201);
+    expect(expectSuccess(res)).toMatchObject({ displayName: 'Ana' });
+  });
+
+  it('returns a distinct participantId and token per join', async () => {
+    const { app } = createTestApp();
+    const sessionId = await createSession(app);
+
+    const first = expectSuccess(
+      await request(app)
+        .post(`/api/sessions/${sessionId}/participants`)
+        .send({ displayName: 'Ana' }),
+    ) as { participantId: string; token: string };
+    const second = expectSuccess(
+      await request(app)
+        .post(`/api/sessions/${sessionId}/participants`)
+        .send({ displayName: 'Raj' }),
+    ) as { participantId: string; token: string };
+
+    expect(first.participantId).not.toBe(second.participantId);
+    expect(first.token).not.toBe(second.token);
+  });
+
+  it('suffixes a duplicate name', async () => {
+    const { app } = createTestApp();
+    const sessionId = await createSession(app);
+    await request(app)
+      .post(`/api/sessions/${sessionId}/participants`)
+      .send({ displayName: 'Ana' });
+
+    const res = await request(app)
+      .post(`/api/sessions/${sessionId}/participants`)
+      .send({ displayName: 'ana' });
+
+    expect(expectSuccess(res)).toMatchObject({ displayName: 'ana (2)' });
+  });
+
+  it('rejects an empty display name with invalid_name', async () => {
+    const { app } = createTestApp();
+    const sessionId = await createSession(app);
+
+    const res = await request(app)
+      .post(`/api/sessions/${sessionId}/participants`)
+      .send({ displayName: '   ' });
+
+    expect(res.status).toBe(400);
+    expect(expectErrorCode(res)).toBe('invalid_name');
+  });
+
+  it('returns not_found for an unknown session', async () => {
+    const { app } = createTestApp();
+
+    const res = await request(app)
+      .post('/api/sessions/123e4567-e89b-12d3-a456-426614174000/participants')
+      .send({ displayName: 'Ana' });
+
+    expect(res.status).toBe(404);
+    expect(expectErrorCode(res)).toBe('not_found');
+  });
+
+  it('returns not_found for a malformed session id', async () => {
+    const { app } = createTestApp();
+
+    const res = await request(app)
+      .post('/api/sessions/not-a-uuid/participants')
+      .send({ displayName: 'Ana' });
+
+    expect(res.status).toBe(404);
+    expect(expectErrorCode(res)).toBe('not_found');
+  });
+});
