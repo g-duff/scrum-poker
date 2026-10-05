@@ -6,7 +6,7 @@ Current: slice 2, create and join (branch `slice-2-create-and-join`)
 
 - [x] 1. Shared domain types (Session, Participant, Vote, SessionSnapshot)
 - [x] 2. Shared Zod schemas for create-session and join-participant bodies
-- [ ] 3. `SessionStore` interface and its reusable contract test suite
+- [x] 3. `SessionStore` interface and its reusable contract test suite
 - [ ] 4. In-memory `SessionStore` implementation against the contract suite
 - [ ] 5. `SessionNotifier` interface and in-process implementation
 - [ ] 6. Token auth: generation, hashing, and Bearer-token middleware
