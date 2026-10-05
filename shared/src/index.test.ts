@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { APP_NAME } from './index.ts';
+import { APP_NAME } from '#src/index';
 
 describe('APP_NAME', () => {
   it('names the app', () => {

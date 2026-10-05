@@ -471,7 +471,10 @@ not tripped up. Limits and the default deck are constants in `shared/`.
   - erasable syntax only: no enums, namespaces or parameter properties
     (`erasableSyntaxOnly`)
   - types are imported with `import type` (`verbatimModuleSyntax`)
-  - relative imports include the `.ts` extension (`allowImportingTsExtensions`)
+  - no relative imports within a package; each package maps its own `src/`
+    via a Node subpath import in its `package.json`
+    (`"imports": { "#src/*": "./src/*.ts" }`), so code imports as
+    `#src/app`, not `./app.ts`
 - `shared/` is read by both Node and Vite, so it follows the same rules, and its
   package exports point at the `.ts` source.
 - npm workspaces, ESM everywhere, TypeScript `strict` plus

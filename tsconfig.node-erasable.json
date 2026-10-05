@@ -3,7 +3,6 @@
   "compilerOptions": {
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "erasableSyntaxOnly": true,
-    "allowImportingTsExtensions": true
+    "erasableSyntaxOnly": true
   }
 }
