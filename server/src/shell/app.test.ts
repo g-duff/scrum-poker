@@ -1,4 +1,5 @@
 import { mkdtempSync, writeFileSync } from 'node:fs';
+import http from 'node:http';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -6,6 +7,55 @@ import request from 'supertest';
 import type { ApiResponse } from '@scrum-poker/shared';
 import { createApp } from '#src/shell/app';
 import { createInMemorySessionStore } from '#src/shell/inMemorySessionStore';
+import { createInProcessSessionNotifier } from '#src/shell/inProcessSessionNotifier';
+
+function startTestServer(app: ReturnType<typeof createApp>) {
+  const server = app.listen(0);
+  const address = server.address();
+  if (address === null || typeof address === 'string') {
+    throw new Error('Expected the test server to bind to a network address');
+  }
+  return { server, port: address.port };
+}
+
+function collectSnapshotEvents(
+  port: number,
+  path: string,
+  count: number,
+): Promise<unknown[]> {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const req = http.get({ host: '127.0.0.1', port, path }, (res) => {
+      let buffer = '';
+      const events: unknown[] = [];
+      res.on('data', (chunk: Buffer) => {
+        buffer += chunk.toString();
+        let boundary = buffer.indexOf('\n\n');
+        while (boundary !== -1) {
+          const message = buffer.slice(0, boundary);
+          buffer = buffer.slice(boundary + 2);
+          const dataLine = message
+            .split('\n')
+            .find((line) => line.startsWith('data: '));
+          if (dataLine) {
+            events.push(JSON.parse(dataLine.slice('data: '.length)));
+            if (events.length === count && !settled) {
+              settled = true;
+              resolve(events);
+              req.destroy();
+            }
+          }
+          boundary = buffer.indexOf('\n\n');
+        }
+      });
+    });
+    req.on('error', (err) => {
+      if (!settled) {
+        reject(err);
+      }
+    });
+  });
+}
 
 function body<T>(res: request.Response): ApiResponse<T> {
   return res.body as ApiResponse<T>;
@@ -41,8 +91,14 @@ function createTestDist() {
 
 function createTestApp() {
   const store = createInMemorySessionStore();
-  const app = createApp(createTestDist(), store, SESSION_IDLE_SECONDS);
-  return { app, store };
+  const notifier = createInProcessSessionNotifier();
+  const app = createApp(
+    createTestDist(),
+    store,
+    notifier,
+    SESSION_IDLE_SECONDS,
+  );
+  return { app, store, notifier };
 }
 
 describe('GET /api/health', () => {
@@ -308,6 +364,84 @@ describe('GET /api/sessions/:id', () => {
     const res = await request(app)
       .get('/api/sessions/123e4567-e89b-12d3-a456-426614174000')
       .set('Authorization', 'Bearer anything');
+
+    expect(res.status).toBe(404);
+    expect(expectErrorCode(res)).toBe('not_found');
+  });
+});
+
+describe('GET /api/sessions/:id/events', () => {
+  async function createSessionAndJoin(
+    app: ReturnType<typeof createApp>,
+    displayName = 'Ana',
+  ) {
+    const createRes = await request(app).post('/api/sessions').send({});
+    const { id: sessionId } = expectSuccess(createRes) as { id: string };
+
+    const joinRes = await request(app)
+      .post(`/api/sessions/${sessionId}/participants`)
+      .send({ displayName });
+    const { participantId, token } = expectSuccess(joinRes) as {
+      participantId: string;
+      token: string;
+    };
+
+    return { sessionId, participantId, token };
+  }
+
+  it('sends an initial snapshot event on connect', async () => {
+    const { app } = createTestApp();
+    const { sessionId, token } = await createSessionAndJoin(app);
+    const { server, port } = startTestServer(app);
+
+    const [snapshot] = await collectSnapshotEvents(
+      port,
+      `/api/sessions/${sessionId}/events?token=${token}`,
+      1,
+    );
+    server.close();
+
+    expect(snapshot).toMatchObject({ id: sessionId, state: 'voting' });
+  });
+
+  it('pushes an updated snapshot when another participant joins', async () => {
+    const { app } = createTestApp();
+    const { sessionId, token } = await createSessionAndJoin(app, 'Ana');
+    const { server, port } = startTestServer(app);
+
+    const eventsPromise = collectSnapshotEvents(
+      port,
+      `/api/sessions/${sessionId}/events?token=${token}`,
+      2,
+    );
+    await request(app)
+      .post(`/api/sessions/${sessionId}/participants`)
+      .send({ displayName: 'Raj' });
+
+    const [, updated] = await eventsPromise;
+    server.close();
+
+    expect(updated).toMatchObject({
+      participants: [{ name: 'Ana' }, { name: 'Raj' }],
+    });
+  });
+
+  it('returns unauthorized for a missing token', async () => {
+    const { app } = createTestApp();
+    const { sessionId } = await createSessionAndJoin(app);
+
+    const res = await request(app).get(`/api/sessions/${sessionId}/events`);
+
+    expect(res.status).toBe(401);
+    expect(expectErrorCode(res)).toBe('unauthorized');
+  });
+
+  it('returns not_found for an unknown session', async () => {
+    const { app } = createTestApp();
+
+    const res = await request(app)
+      .get('/api/sessions/123e4567-e89b-12d3-a456-426614174000/events')
+      .query({ token: 'anything' });
 
     expect(res.status).toBe(404);
     expect(expectErrorCode(res)).toBe('not_found');

@@ -17,7 +17,7 @@ Current: slice 2, create and join (branch `slice-2-create-and-join`)
 - [x] 9. Create-session endpoint (`POST /api/sessions`)
 - [x] 10. Join endpoint (`POST /api/sessions/:id/participants`), name validation and suffixing
 - [x] 11. Snapshot endpoint (`GET /api/sessions/:id`)
-- [ ] 12. SSE events endpoint (`GET /api/sessions/:id/events`)
+- [x] 12. SSE events endpoint (`GET /api/sessions/:id/events`)
 - [ ] 13. Client `SessionConnection` (EventSource wrapper)
 - [ ] 14. Home page: create-session form wired to the API
 - [ ] 15. Session page: localStorage identity util (token + participant id)

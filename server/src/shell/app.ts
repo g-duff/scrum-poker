@@ -12,6 +12,7 @@ import {
   createSessionBodySchema,
   DEFAULT_DECK,
   joinParticipantBodySchema,
+  KEEPALIVE_INTERVAL_MS,
 } from '@scrum-poker/shared';
 import type { ZodError } from 'zod';
 import { hashToken } from '#src/core/auth';
@@ -19,6 +20,7 @@ import { resolveDisplayName } from '#src/core/names';
 import { createNewSession } from '#src/core/session';
 import { buildSessionSnapshot } from '#src/core/snapshot';
 import { authenticateParticipant, generateToken } from '#src/shell/auth';
+import type { SessionNotifier } from '#src/shell/sessionNotifier';
 import { findActiveSession } from '#src/shell/session';
 import type { SessionStore } from '#src/shell/sessionStore';
 
@@ -52,9 +54,14 @@ function isPayloadTooLargeError(
   );
 }
 
+function formatSnapshotEvent(snapshot: SessionSnapshot): string {
+  return `event: snapshot\ndata: ${JSON.stringify(snapshot)}\n\n`;
+}
+
 export function createApp(
   webDistPath: string,
   store: SessionStore,
+  notifier: SessionNotifier,
   sessionIdleSeconds: number,
 ) {
   const app = express();
@@ -124,6 +131,7 @@ export function createApp(
         ...current,
         participants: [...current.participants, participant],
       }));
+      await notifier.notify(session.id);
 
       const body: ApiResponse<{
         participantId: string;
@@ -161,6 +169,58 @@ export function createApp(
         return;
       }
     }
+  });
+
+  app.get('/api/sessions/:id/events', async (req: Request, res: Response) => {
+    const sessionId = getSessionIdParam(req);
+    const token = req.query.token;
+    const authorizationHeader =
+      typeof token === 'string' ? `Bearer ${token}` : undefined;
+    const auth = await authenticateParticipant(
+      store,
+      sessionId,
+      authorizationHeader,
+    );
+
+    switch (auth.outcome) {
+      case 'not_found':
+        sendError(res, 404, 'not_found', 'Session not found');
+        return;
+      case 'unauthorized':
+        sendError(res, 401, 'unauthorized', 'Missing or unknown token');
+        return;
+      case 'ok':
+        break;
+    }
+
+    const { participantId } = auth;
+
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      Connection: 'keep-alive',
+    });
+    res.write(formatSnapshotEvent(buildSessionSnapshot(auth.session, participantId)));
+
+    const pushLatestSnapshot = async () => {
+      const session = await store.get(sessionId);
+      if (session) {
+        res.write(formatSnapshotEvent(buildSessionSnapshot(session, participantId)));
+      }
+    };
+
+    const unsubscribe = notifier.subscribe(sessionId, () => {
+      void pushLatestSnapshot();
+    });
+
+    const keepalive = setInterval(() => {
+      res.write(':\n\n');
+    }, KEEPALIVE_INTERVAL_MS);
+
+    req.on('close', () => {
+      clearInterval(keepalive);
+      unsubscribe();
+    });
   });
 
   app.use('/api', (_req: Request, res: Response) => {

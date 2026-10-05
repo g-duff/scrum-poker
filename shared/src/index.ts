@@ -1,4 +1,4 @@
-export { APP_NAME, DEFAULT_DECK } from '#src/constants';
+export { APP_NAME, DEFAULT_DECK, KEEPALIVE_INTERVAL_MS } from '#src/constants';
 export type { ApiResponse, ApiError, ErrorCode } from '#src/api';
 export type {
   Session,
