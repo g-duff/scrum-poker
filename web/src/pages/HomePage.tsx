@@ -3,6 +3,9 @@ import type { SubmitEvent } from 'react';
 import { useNavigate } from 'react-router';
 import type { ApiResponse } from '@scrum-poker/shared';
 import { DEFAULT_DECK } from '@scrum-poker/shared';
+import shared from '#src/styles/shared.module.css';
+import { cx } from '#src/styles/cx';
+import styles from '#src/pages/HomePage.module.css';
 
 function parseDeck(cardsInput: string): string[] {
   return cardsInput
@@ -45,22 +48,37 @@ export function HomePage() {
   }
 
   return (
-    <main>
-      <h1>Scrum Poker</h1>
-      <form onSubmit={handleSubmit}>
-        <label htmlFor="cards">Cards (comma separated)</label>
-        <input
-          id="cards"
-          value={cardsInput}
-          onChange={(event) => {
-            setCardsInput(event.target.value);
-          }}
-        />
-        {error !== null && <p role="alert">{error}</p>}
-        <button type="submit" disabled={submitting}>
-          Create session
-        </button>
-      </form>
+    <main className={cx(shared.wrap)}>
+      <h1 className={cx(styles.title)}>Scrum Poker</h1>
+      <div className={cx(shared.panel)}>
+        <form onSubmit={handleSubmit}>
+          <label htmlFor="cards" className={cx(shared.label)}>
+            Cards (comma separated)
+          </label>
+          <div className={cx(shared.row)}>
+            <input
+              id="cards"
+              className={cx(shared.textInput)}
+              value={cardsInput}
+              onChange={(event) => {
+                setCardsInput(event.target.value);
+              }}
+            />
+            <button
+              type="submit"
+              className={cx(shared.buttonPrimary)}
+              disabled={submitting}
+            >
+              Create session
+            </button>
+          </div>
+          {error !== null && (
+            <p role="alert" className={cx(shared.note, shared.noteErr)}>
+              {error}
+            </p>
+          )}
+        </form>
+      </div>
     </main>
   );
 }

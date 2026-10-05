@@ -5,6 +5,6 @@ Completed: slice 1, slice 2
 Current: style pass (branch `style-pass`)
 
 - [x] 1. Global design tokens and base styles
-- [ ] 2. Style the Home page
+- [x] 2. Style the Home page
 - [ ] 3. Style the Session page: join form and not-found view
 - [ ] 4. Style the Session page: ready view (participant list)
