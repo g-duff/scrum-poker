@@ -1,0 +1,7 @@
+{
+  "extends": "../tsconfig.node-erasable.json",
+  "compilerOptions": {
+    "rootDir": "src"
+  },
+  "include": ["src"]
+}
