@@ -14,7 +14,7 @@ Current: slice 1, walking skeleton (branch `slice-1-walking-skeleton`)
       envelope, a catch-all 404 not_found for unknown /api routes, pino
       logger, config.ts reading PORT via Zod, run directly with node, and
       supertest tests for both routes
-- [ ] 4. web/: Vite + React app, React Router with / and /s/:id, home page
+- [x] 4. web/: Vite + React app, React Router with / and /s/:id, home page
       that fetches /api/health and shows the status, dev proxy for /api, and
       an RTL test
 - [ ] 5. Static serving + Dockerfile: server serves web/'s built output from
