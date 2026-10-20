@@ -163,6 +163,262 @@ describe('SessionPage', () => {
     expect(raj).toHaveTextContent('(inactive)');
   });
 
+  it('shows the deck as pickable cards', async () => {
+    createLocalStorageSessionIdentityStore().set('s1', {
+      participantId: 'p1',
+      token: 'tok',
+    });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        jsonResponse({
+          data: makeSnapshot(),
+          error: null,
+        } satisfies ApiResponse<SessionSnapshot>),
+      ),
+    );
+    const connections: FakeSessionConnection[] = [];
+
+    renderSessionPage(connections);
+    await waitFor(() => {
+      expect(connections).toHaveLength(1);
+    });
+    connections[0]?.emit(makeSnapshot({ deck: ['1', '2', '3'] }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Pick a card')).toBeInTheDocument();
+    });
+    expect(screen.getByRole('button', { name: '1' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '2' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '3' })).toBeInTheDocument();
+  });
+
+  it('hides the card picker once the round is revealed', async () => {
+    createLocalStorageSessionIdentityStore().set('s1', {
+      participantId: 'p1',
+      token: 'tok',
+    });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        jsonResponse({
+          data: makeSnapshot(),
+          error: null,
+        } satisfies ApiResponse<SessionSnapshot>),
+      ),
+    );
+    const connections: FakeSessionConnection[] = [];
+
+    renderSessionPage(connections);
+    await waitFor(() => {
+      expect(connections).toHaveLength(1);
+    });
+    connections[0]?.emit(makeSnapshot({ state: 'revealed' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Revealed')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('Pick a card')).not.toBeInTheDocument();
+  });
+
+  it('casts a vote when a card is clicked', async () => {
+    createLocalStorageSessionIdentityStore().set('s1', {
+      participantId: 'p1',
+      token: 'tok',
+    });
+    const putRequests: { url: string; body: unknown }[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(
+        (input: string, init?: RequestInit) => {
+          if (init?.method === 'PUT') {
+            putRequests.push({
+              url: input,
+              body: JSON.parse(init.body as string),
+            });
+            return Promise.resolve(
+              jsonResponse({ data: null, error: null } satisfies ApiResponse<null>),
+            );
+          }
+          return Promise.resolve(
+            jsonResponse({
+              data: makeSnapshot(),
+              error: null,
+            } satisfies ApiResponse<SessionSnapshot>),
+          );
+        },
+      ),
+    );
+    const connections: FakeSessionConnection[] = [];
+
+    renderSessionPage(connections);
+    await waitFor(() => {
+      expect(connections).toHaveLength(1);
+    });
+    connections[0]?.emit(makeSnapshot({ deck: ['1', '2', '3'] }));
+    await waitFor(() => {
+      expect(screen.getByText('Pick a card')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: '2' }));
+
+    await waitFor(() => {
+      expect(putRequests).toEqual([
+        { url: '/api/sessions/s1/votes/me', body: { round: 1, value: '2' } },
+      ]);
+    });
+  });
+
+  it('highlights the selected card and clears it', async () => {
+    createLocalStorageSessionIdentityStore().set('s1', {
+      participantId: 'p1',
+      token: 'tok',
+    });
+    const deleteRequests: string[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(
+        (input: string, init?: RequestInit) => {
+          if (init?.method === 'DELETE') {
+            deleteRequests.push(input);
+            return Promise.resolve(
+              jsonResponse({ data: null, error: null } satisfies ApiResponse<null>),
+            );
+          }
+          return Promise.resolve(
+            jsonResponse({
+              data: makeSnapshot(),
+              error: null,
+            } satisfies ApiResponse<SessionSnapshot>),
+          );
+        },
+      ),
+    );
+    const connections: FakeSessionConnection[] = [];
+
+    renderSessionPage(connections);
+    await waitFor(() => {
+      expect(connections).toHaveLength(1);
+    });
+    connections[0]?.emit(
+      makeSnapshot({ deck: ['1', '2'], yourVote: '2' }),
+    );
+    await waitFor(() => {
+      expect(screen.getByText('Pick a card')).toBeInTheDocument();
+    });
+
+    const selectedCard = screen.getByRole('button', { name: '2' });
+    expect(selectedCard).toHaveAttribute('aria-pressed', 'true');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Clear my vote' }));
+
+    await waitFor(() => {
+      expect(deleteRequests).toEqual(['/api/sessions/s1/votes/me?round=1']);
+    });
+  });
+
+  it('shows an error message when a vote is rejected', async () => {
+    createLocalStorageSessionIdentityStore().set('s1', {
+      participantId: 'p1',
+      token: 'tok',
+    });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(
+        (_input: RequestInfo | URL, init?: RequestInit) => {
+          if (init?.method === 'PUT') {
+            return Promise.resolve(
+              jsonResponse({
+                data: null,
+                error: {
+                  code: 'invalid_card',
+                  message: 'Vote value is not a card in the deck',
+                },
+              } satisfies ApiResponse<null>),
+            );
+          }
+          return Promise.resolve(
+            jsonResponse({
+              data: makeSnapshot(),
+              error: null,
+            } satisfies ApiResponse<SessionSnapshot>),
+          );
+        },
+      ),
+    );
+    const connections: FakeSessionConnection[] = [];
+
+    renderSessionPage(connections);
+    await waitFor(() => {
+      expect(connections).toHaveLength(1);
+    });
+    connections[0]?.emit(makeSnapshot({ deck: ['1', '2'] }));
+    await waitFor(() => {
+      expect(screen.getByText('Pick a card')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: '2' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'Vote value is not a card in the deck',
+      );
+    });
+  });
+
+  it('resyncs the snapshot on a stale round error', async () => {
+    createLocalStorageSessionIdentityStore().set('s1', {
+      participantId: 'p1',
+      token: 'tok',
+    });
+    const resyncedSnapshot = makeSnapshot({
+      round: 2,
+      participants: [{ id: 'p2', name: 'Mei', active: true, hasVoted: false }],
+    });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(
+        (_input: RequestInfo | URL, init?: RequestInit) => {
+          if (init?.method === 'PUT') {
+            return Promise.resolve(
+              jsonResponse({
+                data: null,
+                error: {
+                  code: 'stale_round',
+                  message: 'Round is stale',
+                  details: { snapshot: resyncedSnapshot },
+                },
+              } satisfies ApiResponse<null>),
+            );
+          }
+          return Promise.resolve(
+            jsonResponse({
+              data: makeSnapshot(),
+              error: null,
+            } satisfies ApiResponse<SessionSnapshot>),
+          );
+        },
+      ),
+    );
+    const connections: FakeSessionConnection[] = [];
+
+    renderSessionPage(connections);
+    await waitFor(() => {
+      expect(connections).toHaveLength(1);
+    });
+    connections[0]?.emit(makeSnapshot({ deck: ['1', '2'] }));
+    await waitFor(() => {
+      expect(screen.getByText('Pick a card')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: '2' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Mei')).toBeInTheDocument();
+    });
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
   it('closes the live connection on unmount', async () => {
     createLocalStorageSessionIdentityStore().set('s1', {
       participantId: 'p1',

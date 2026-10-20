@@ -8,5 +8,5 @@ Current: slice 3, vote with hidden values (branch `slice-3-vote-with-hidden-valu
 - [x] 1. Shared: vote request schema
 - [x] 2. Core: vote and clear-vote rules
 - [x] 3. Shell: vote endpoints
-- [ ] 4. Web: card picker UI and vote actions
+- [x] 4. Web: card picker UI and vote actions, split into components and a shell API module
 - [ ] 5. Style pass on the card grid

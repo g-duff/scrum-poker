@@ -30,7 +30,12 @@ describe('sessionPageReducer', () => {
       identity,
     });
 
-    expect(state).toEqual({ phase: 'ready', identity, snapshot: null });
+    expect(state).toEqual({
+      phase: 'ready',
+      identity,
+      snapshot: null,
+      voteError: null,
+    });
   });
 
   it('moves to not-found', () => {
@@ -93,6 +98,7 @@ describe('sessionPageReducer', () => {
       phase: 'ready',
       identity,
       snapshot: null,
+      voteError: null,
     };
     const snapshot = makeSnapshot();
 
@@ -101,13 +107,69 @@ describe('sessionPageReducer', () => {
       snapshot,
     });
 
-    expect(state).toEqual({ phase: 'ready', identity, snapshot });
+    expect(state).toEqual({
+      phase: 'ready',
+      identity,
+      snapshot,
+      voteError: null,
+    });
+  });
+
+  it('clears a stale vote error when a fresh snapshot arrives', () => {
+    const readyState: SessionPageState = {
+      phase: 'ready',
+      identity,
+      snapshot: null,
+      voteError: 'Vote value is not a card in the deck',
+    };
+
+    const state = sessionPageReducer(readyState, {
+      type: 'snapshot_received',
+      snapshot: makeSnapshot(),
+    });
+
+    expect(state).toEqual({
+      phase: 'ready',
+      identity,
+      snapshot: makeSnapshot(),
+      voteError: null,
+    });
   });
 
   it('ignores an incoming snapshot outside the ready phase', () => {
     const state = sessionPageReducer(initialSessionPageState, {
       type: 'snapshot_received',
       snapshot: makeSnapshot(),
+    });
+
+    expect(state).toEqual(initialSessionPageState);
+  });
+
+  it('records a vote error while ready', () => {
+    const readyState: SessionPageState = {
+      phase: 'ready',
+      identity,
+      snapshot: makeSnapshot(),
+      voteError: null,
+    };
+
+    const state = sessionPageReducer(readyState, {
+      type: 'vote_failed',
+      message: 'Vote value is not a card in the deck',
+    });
+
+    expect(state).toEqual({
+      phase: 'ready',
+      identity,
+      snapshot: makeSnapshot(),
+      voteError: 'Vote value is not a card in the deck',
+    });
+  });
+
+  it('ignores a vote error outside the ready phase', () => {
+    const state = sessionPageReducer(initialSessionPageState, {
+      type: 'vote_failed',
+      message: 'Vote value is not a card in the deck',
     });
 
     expect(state).toEqual(initialSessionPageState);

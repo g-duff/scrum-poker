@@ -13,6 +13,7 @@ export type SessionPageState =
       phase: 'ready';
       identity: ParticipantIdentity;
       snapshot: SessionSnapshot | null;
+      voteError: string | null;
     };
 
 export type SessionPageAction =
@@ -21,7 +22,8 @@ export type SessionPageAction =
   | { type: 'unauthenticated' }
   | { type: 'join_submitted' }
   | { type: 'join_failed'; message: string }
-  | { type: 'snapshot_received'; snapshot: SessionSnapshot };
+  | { type: 'snapshot_received'; snapshot: SessionSnapshot }
+  | { type: 'vote_failed'; message: string };
 
 export const initialSessionPageState: SessionPageState = { phase: 'loading' };
 
@@ -31,7 +33,12 @@ export function sessionPageReducer(
 ): SessionPageState {
   switch (action.type) {
     case 'authenticated':
-      return { phase: 'ready', identity: action.identity, snapshot: null };
+      return {
+        phase: 'ready',
+        identity: action.identity,
+        snapshot: null,
+        voteError: null,
+      };
     case 'not_found':
       return { phase: 'not-found' };
     case 'unauthenticated':
@@ -44,7 +51,11 @@ export function sessionPageReducer(
       return { phase: 'join', submitting: false, error: action.message };
     case 'snapshot_received':
       return state.phase === 'ready'
-        ? { ...state, snapshot: action.snapshot }
+        ? { ...state, snapshot: action.snapshot, voteError: null }
+        : state;
+    case 'vote_failed':
+      return state.phase === 'ready'
+        ? { ...state, voteError: action.message }
         : state;
   }
 }
