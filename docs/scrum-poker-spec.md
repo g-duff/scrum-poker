@@ -565,17 +565,17 @@ with these defaults, so they can be checked in seconds:
 The monorepo with `server/`, `web/` and `shared/`, Express serving the built React
 page from `/`, `GET /api/health`, and a Containerfile.
 
-- [ ] The container image builds and runs with a single command each (for
+- [x] The container image builds and runs with a single command each (for
       example `podman build .` / `podman run`, which auto-detect the
       `Containerfile`; Docker needs `docker build -f Containerfile .`)
-- [ ] Opening the container's URL shows the React page
-- [ ] The page shows the server's health status, fetched from `/api/health`
-- [ ] Opening a deep link such as `/s/anything` still loads the app
-- [ ] `npm run check` passes, and the lint step fails if `web/` imports from `server/`
+- [x] Opening the container's URL shows the React page
+- [x] The page shows the server's health status, fetched from `/api/health`
+- [x] Opening a deep link such as `/s/anything` still loads the app
+- [x] `npm run check` passes, and the lint step fails if `web/` imports from `server/`
       or the reverse (try it once)
-- [ ] The container runs the server straight from its TypeScript sources with `node`,
+- [x] The container runs the server straight from its TypeScript sources with `node`,
       with no build step, including the code it imports from `shared/`
-- [ ] `GET /api/health` and an unknown `/api` route both respond in the envelope
+- [x] `GET /api/health` and an unknown `/api` route both respond in the envelope
       (`data` for health, a `404` `not_found` error for the unknown route)
 
 ### Slice 2: Create and join
@@ -584,16 +584,16 @@ Create a session, share the link, join with a name and see the participant list
 update live over SSE. The `SessionStore`, `SessionNotifier` and
 `SessionConnection` interfaces appear here, with their first implementations.
 
-- [ ] Creating a session in the UI gives a shareable link containing a UUID
-- [ ] Opening the link in a second window asks for a display name, and after
+- [x] Creating a session in the UI gives a shareable link containing a UUID
+- [x] Opening the link in a second window asks for a display name, and after
       joining both windows list both names within about a second, without a refresh
-- [ ] Joining with a name that is already taken, in any letter case, shows it with a
+- [x] Joining with a name that is already taken, in any letter case, shows it with a
       suffix such as `Ana (2)`
-- [ ] A name is trimmed, and an empty name or one over 30 characters is rejected with
+- [x] A name is trimmed, and an empty name or one over 30 characters is rejected with
       a clear message
-- [ ] Refreshing a tab keeps the same identity and does not join a second time
-- [ ] An unknown or malformed session id shows a clear "session not found" page
-- [ ] Each tab has exactly one open event-stream request in the network tab
+- [x] Refreshing a tab keeps the same identity and does not join a second time
+- [x] An unknown or malformed session id shows a clear "session not found" page
+- [x] Each tab has exactly one open event-stream request in the network tab
 
 ### Slice 3: Vote with hidden values
 
