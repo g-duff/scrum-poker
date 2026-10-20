@@ -601,14 +601,14 @@ update live over SSE. The `SessionStore`, `SessionNotifier` and
 
 The default deck, card selection, who has voted, and your own vote after a refresh.
 
-- [ ] The default deck shows the Fibonacci cards plus ? and the coffee-cup card
-- [ ] Picking a card marks it as selected, and the other window shows you as voted
+- [x] The default deck shows the Fibonacci cards plus ? and the coffee-cup card
+- [x] Picking a card marks it as selected, and the other window shows you as voted
       without showing the value
-- [ ] Changing and clearing a vote both update the other window
-- [ ] Refreshing keeps your selected card
-- [ ] In the other window's network tab, neither the stream nor the snapshot ever
+- [x] Changing and clearing a vote both update the other window
+- [x] Refreshing keeps your selected card
+- [x] In the other window's network tab, neither the stream nor the snapshot ever
       contains your value before reveal
-- [ ] A hand-made request with a card that is not in the deck is rejected with `400 invalid_card`
+- [x] A hand-made request with a card that is not in the deck is rejected with `400 invalid_card`
 
 ### Slice 4: Reveal and reset
 
