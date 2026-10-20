@@ -108,17 +108,19 @@ while VOTING, to discard votes.
 
 ## Actions and rules
 
-Every action that changes a round carries the `round_number` the client last
-saw. The server rejects it if that number is stale, so two people pressing reset
-at once cannot wipe a fresh round.
+Every action that carries a `round_number` — vote, clear vote, reveal and
+reset — is checked against the session's current round. A stale round is
+rejected with `409 stale_round`, so two people pressing reset at once cannot
+wipe a fresh round, and a vote cast just as a reset happens cannot land in the
+new round.
 
 | Action         | Allowed when                                   | Effect                                                                                  |
 | -------------- | ---------------------------------------------- | --------------------------------------------------------------------------------------- |
 | Create session | Always                                         | New session: UUID id, deck (default Fibonacci), `state = voting`, `round_number = 1`    |
 | Join           | Session exists and has not expired; any time   | New participant with a display name (suffixed if taken) and a random token              |
 | Leave          | Always                                         | Deletes your participant and your vote                                                  |
-| Vote           | `state = voting`                               | Sets or replaces your vote with a card from the deck                                    |
-| Clear vote     | `state = voting`                               | Removes your vote                                                                       |
+| Vote           | `state = voting`, round matches                | Sets or replaces your vote with a card from the deck                                    |
+| Clear vote     | `state = voting`, round matches                | Removes your vote                                                                       |
 | Reveal         | `state = voting`, round matches                | `state = revealed`; allowed with zero votes; no-op if already revealed                  |
 | Reset          | Round matches, any state                       | Deletes all votes, drops inactive participants, `state = voting`, `round_number + 1`; deck may be edited here |
 
