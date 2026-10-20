@@ -35,3 +35,12 @@ export const createSessionBodySchema = z.object({
 export const joinParticipantBodySchema = z.object({
   displayName: displayNameSchema,
 });
+
+export const roundSchema = z.number().int().min(1);
+
+export const voteBodySchema = z.object({
+  round: roundSchema,
+  value: z.string().min(1),
+});
+
+export const roundQuerySchema = z.coerce.number().int().min(1);

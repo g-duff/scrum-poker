@@ -13,4 +13,7 @@ export {
   deckSchema,
   createSessionBodySchema,
   joinParticipantBodySchema,
+  roundSchema,
+  voteBodySchema,
+  roundQuerySchema,
 } from '#src/schemas';
