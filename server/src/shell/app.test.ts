@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import request from 'supertest';
-import type { ApiResponse } from '@scrum-poker/shared';
+import type { ApiResponse, SessionSnapshot } from '@scrum-poker/shared';
 import { createApp } from '#src/shell/app';
 import { createInMemorySessionStore } from '#src/shell/inMemorySessionStore';
 import { createInProcessSessionNotifier } from '#src/shell/inProcessSessionNotifier';
@@ -442,6 +442,298 @@ describe('GET /api/sessions/:id/events', () => {
     const res = await request(app)
       .get('/api/sessions/123e4567-e89b-12d3-a456-426614174000/events')
       .query({ token: 'anything' });
+
+    expect(res.status).toBe(404);
+    expect(expectErrorCode(res)).toBe('not_found');
+  });
+});
+
+describe('PUT /api/sessions/:id/votes/me', () => {
+  async function createSessionAndJoin(
+    app: ReturnType<typeof createApp>,
+    displayName = 'Ana',
+  ) {
+    const createRes = await request(app).post('/api/sessions').send({});
+    const { id: sessionId } = expectSuccess(createRes) as { id: string };
+
+    const joinRes = await request(app)
+      .post(`/api/sessions/${sessionId}/participants`)
+      .send({ displayName });
+    const { participantId, token } = expectSuccess(joinRes) as {
+      participantId: string;
+      token: string;
+    };
+
+    return { sessionId, participantId, token };
+  }
+
+  it('casts a vote', async () => {
+    const { app } = createTestApp();
+    const { sessionId, token } = await createSessionAndJoin(app);
+
+    const res = await request(app)
+      .put(`/api/sessions/${sessionId}/votes/me`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ round: 1, value: '5' });
+
+    expect(res.status).toBe(200);
+    expect(expectSuccess(res)).toBeNull();
+
+    const snapshotRes = await request(app)
+      .get(`/api/sessions/${sessionId}`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(expectSuccess(snapshotRes)).toMatchObject({ yourVote: '5' });
+  });
+
+  it('replaces an existing vote', async () => {
+    const { app } = createTestApp();
+    const { sessionId, token } = await createSessionAndJoin(app);
+    await request(app)
+      .put(`/api/sessions/${sessionId}/votes/me`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ round: 1, value: '5' });
+
+    await request(app)
+      .put(`/api/sessions/${sessionId}/votes/me`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ round: 1, value: '8' });
+
+    const snapshotRes = await request(app)
+      .get(`/api/sessions/${sessionId}`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(expectSuccess(snapshotRes)).toMatchObject({ yourVote: '8' });
+  });
+
+  it('hides the vote value from other participants while voting', async () => {
+    const { app } = createTestApp();
+    const { sessionId, token } = await createSessionAndJoin(app, 'Ana');
+    const { token: otherToken } = await (async () => {
+      const joinRes = await request(app)
+        .post(`/api/sessions/${sessionId}/participants`)
+        .send({ displayName: 'Raj' });
+      return expectSuccess(joinRes) as { token: string };
+    })();
+
+    await request(app)
+      .put(`/api/sessions/${sessionId}/votes/me`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ round: 1, value: '5' });
+
+    const snapshotRes = await request(app)
+      .get(`/api/sessions/${sessionId}`)
+      .set('Authorization', `Bearer ${otherToken}`);
+    const snapshot = expectSuccess(snapshotRes) as SessionSnapshot;
+    expect(snapshot).toMatchObject({
+      participants: [
+        { name: 'Ana', hasVoted: true },
+        { name: 'Raj', hasVoted: false },
+      ],
+    });
+    expect(snapshot.participants[0]).not.toHaveProperty('vote');
+    expect(snapshot).not.toHaveProperty('yourVote');
+  });
+
+  it('pushes an updated snapshot to another connected participant', async () => {
+    const { app } = createTestApp();
+    const { sessionId, token } = await createSessionAndJoin(app, 'Ana');
+    const joinRes = await request(app)
+      .post(`/api/sessions/${sessionId}/participants`)
+      .send({ displayName: 'Raj' });
+    const { token: otherToken } = expectSuccess(joinRes) as {
+      token: string;
+    };
+    const { server, port } = startTestServer(app);
+
+    const eventsPromise = collectSnapshotEvents(
+      port,
+      `/api/sessions/${sessionId}/events?token=${otherToken}`,
+      2,
+    );
+    await request(app)
+      .put(`/api/sessions/${sessionId}/votes/me`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ round: 1, value: '5' });
+
+    const [, updated] = await eventsPromise;
+    server.close();
+
+    expect(updated).toMatchObject({
+      participants: [
+        { name: 'Ana', hasVoted: true },
+        { name: 'Raj', hasVoted: false },
+      ],
+    });
+  });
+
+  it('rejects a value that is not a card in the deck', async () => {
+    const { app } = createTestApp();
+    const { sessionId, token } = await createSessionAndJoin(app);
+
+    const res = await request(app)
+      .put(`/api/sessions/${sessionId}/votes/me`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ round: 1, value: '99' });
+
+    expect(res.status).toBe(400);
+    expect(expectErrorCode(res)).toBe('invalid_card');
+  });
+
+  it('rejects a stale round with the current snapshot', async () => {
+    const { app } = createTestApp();
+    const { sessionId, token } = await createSessionAndJoin(app);
+
+    const res = await request(app)
+      .put(`/api/sessions/${sessionId}/votes/me`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ round: 2, value: '5' });
+
+    expect(res.status).toBe(409);
+    const result = res.body as ApiResponse<null>;
+    expect(result.error?.code).toBe('stale_round');
+    expect(result.error?.details).toMatchObject({
+      snapshot: { round: 1 },
+    });
+  });
+
+  it('rejects a malformed body with invalid_body', async () => {
+    const { app } = createTestApp();
+    const { sessionId, token } = await createSessionAndJoin(app);
+
+    const res = await request(app)
+      .put(`/api/sessions/${sessionId}/votes/me`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ value: '5' });
+
+    expect(res.status).toBe(400);
+    expect(expectErrorCode(res)).toBe('invalid_body');
+  });
+
+  it('returns unauthorized with a missing token', async () => {
+    const { app } = createTestApp();
+    const { sessionId } = await createSessionAndJoin(app);
+
+    const res = await request(app)
+      .put(`/api/sessions/${sessionId}/votes/me`)
+      .send({ round: 1, value: '5' });
+
+    expect(res.status).toBe(401);
+    expect(expectErrorCode(res)).toBe('unauthorized');
+  });
+
+  it('returns not_found for an unknown session', async () => {
+    const { app } = createTestApp();
+
+    const res = await request(app)
+      .put('/api/sessions/123e4567-e89b-12d3-a456-426614174000/votes/me')
+      .set('Authorization', 'Bearer anything')
+      .send({ round: 1, value: '5' });
+
+    expect(res.status).toBe(404);
+    expect(expectErrorCode(res)).toBe('not_found');
+  });
+});
+
+describe('DELETE /api/sessions/:id/votes/me', () => {
+  async function createSessionAndJoin(app: ReturnType<typeof createApp>) {
+    const createRes = await request(app).post('/api/sessions').send({});
+    const { id: sessionId } = expectSuccess(createRes) as { id: string };
+
+    const joinRes = await request(app)
+      .post(`/api/sessions/${sessionId}/participants`)
+      .send({ displayName: 'Ana' });
+    const { participantId, token } = expectSuccess(joinRes) as {
+      participantId: string;
+      token: string;
+    };
+
+    return { sessionId, participantId, token };
+  }
+
+  async function createSessionAndJoinWithVote(app: ReturnType<typeof createApp>) {
+    const { sessionId, participantId, token } = await createSessionAndJoin(app);
+
+    await request(app)
+      .put(`/api/sessions/${sessionId}/votes/me`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ round: 1, value: '5' });
+
+    return { sessionId, participantId, token };
+  }
+
+  it('clears an existing vote', async () => {
+    const { app } = createTestApp();
+    const { sessionId, token } = await createSessionAndJoinWithVote(app);
+
+    const res = await request(app)
+      .delete(`/api/sessions/${sessionId}/votes/me`)
+      .query({ round: 1 })
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+
+    const snapshotRes = await request(app)
+      .get(`/api/sessions/${sessionId}`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(expectSuccess(snapshotRes)).not.toHaveProperty('yourVote');
+  });
+
+  it('is a no-op when there is no vote to clear', async () => {
+    const { app } = createTestApp();
+    const { sessionId, token } = await createSessionAndJoin(app);
+
+    const res = await request(app)
+      .delete(`/api/sessions/${sessionId}/votes/me`)
+      .query({ round: 1 })
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+  });
+
+  it('rejects a stale round', async () => {
+    const { app } = createTestApp();
+    const { sessionId, token } = await createSessionAndJoinWithVote(app);
+
+    const res = await request(app)
+      .delete(`/api/sessions/${sessionId}/votes/me`)
+      .query({ round: 2 })
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(409);
+    expect(expectErrorCode(res)).toBe('stale_round');
+  });
+
+  it('rejects a non-numeric round with invalid_body', async () => {
+    const { app } = createTestApp();
+    const { sessionId, token } = await createSessionAndJoinWithVote(app);
+
+    const res = await request(app)
+      .delete(`/api/sessions/${sessionId}/votes/me`)
+      .query({ round: 'abc' })
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(400);
+    expect(expectErrorCode(res)).toBe('invalid_body');
+  });
+
+  it('returns unauthorized with a missing token', async () => {
+    const { app } = createTestApp();
+    const { sessionId } = await createSessionAndJoinWithVote(app);
+
+    const res = await request(app)
+      .delete(`/api/sessions/${sessionId}/votes/me`)
+      .query({ round: 1 });
+
+    expect(res.status).toBe(401);
+    expect(expectErrorCode(res)).toBe('unauthorized');
+  });
+
+  it('returns not_found for an unknown session', async () => {
+    const { app } = createTestApp();
+
+    const res = await request(app)
+      .delete('/api/sessions/123e4567-e89b-12d3-a456-426614174000/votes/me')
+      .query({ round: 1 })
+      .set('Authorization', 'Bearer anything');
 
     expect(res.status).toBe(404);
     expect(expectErrorCode(res)).toBe('not_found');

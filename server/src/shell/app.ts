@@ -13,12 +13,16 @@ import {
   DEFAULT_DECK,
   joinParticipantBodySchema,
   KEEPALIVE_INTERVAL_MS,
+  roundQuerySchema,
+  voteBodySchema,
 } from '@scrum-poker/shared';
 import type { ZodError } from 'zod';
 import { hashToken } from '#src/core/auth';
 import { resolveDisplayName } from '#src/core/names';
 import { createNewSession } from '#src/core/session';
 import { buildSessionSnapshot } from '#src/core/snapshot';
+import type { VoteActionResult } from '#src/core/votes';
+import { castVote, clearVote } from '#src/core/votes';
 import { authenticateParticipant, generateToken } from '#src/shell/auth';
 import type { SessionNotifier } from '#src/shell/sessionNotifier';
 import { findActiveSession } from '#src/shell/session';
@@ -29,8 +33,12 @@ function sendError(
   status: number,
   code: ApiError['code'],
   message: string,
+  details?: unknown,
 ): void {
-  const body: ApiResponse<null> = { data: null, error: { code, message } };
+  const body: ApiResponse<null> = {
+    data: null,
+    error: { code, message, details },
+  };
   res.status(status).json(body);
 }
 
@@ -170,6 +178,108 @@ export function createApp(
       }
     }
   });
+
+  app.put('/api/sessions/:id/votes/me', async (req: Request, res: Response) => {
+    const auth = await authenticateParticipant(
+      store,
+      getSessionIdParam(req),
+      req.header('authorization'),
+    );
+
+    switch (auth.outcome) {
+      case 'not_found':
+        sendError(res, 404, 'not_found', 'Session not found');
+        return;
+      case 'unauthorized':
+        sendError(res, 401, 'unauthorized', 'Missing or unknown token');
+        return;
+      case 'ok':
+        break;
+    }
+
+    const parsed = voteBodySchema.safeParse(req.body);
+    if (!parsed.success) {
+      sendError(res, 400, 'invalid_body', 'Invalid request body');
+      return;
+    }
+
+    const { participantId } = auth;
+    let outcome!: VoteActionResult;
+    const updated = await store.update(auth.session.id, (session) => {
+      const result = castVote(
+        session,
+        participantId,
+        parsed.data.round,
+        parsed.data.value,
+      );
+      outcome = result;
+      return result.outcome === 'ok' ? result.session : session;
+    });
+
+    switch (outcome.outcome) {
+      case 'invalid_card':
+        sendError(res, 400, 'invalid_card', 'Vote value is not a card in the deck');
+        return;
+      case 'stale_round':
+        sendError(res, 409, 'stale_round', 'Round is stale', {
+          snapshot: buildSessionSnapshot(updated, participantId),
+        });
+        return;
+      case 'ok':
+        break;
+    }
+
+    await notifier.notify(auth.session.id);
+    const body: ApiResponse<null> = { data: null, error: null };
+    res.status(200).json(body);
+  });
+
+  app.delete(
+    '/api/sessions/:id/votes/me',
+    async (req: Request, res: Response) => {
+      const auth = await authenticateParticipant(
+        store,
+        getSessionIdParam(req),
+        req.header('authorization'),
+      );
+
+      switch (auth.outcome) {
+        case 'not_found':
+          sendError(res, 404, 'not_found', 'Session not found');
+          return;
+        case 'unauthorized':
+          sendError(res, 401, 'unauthorized', 'Missing or unknown token');
+          return;
+        case 'ok':
+          break;
+      }
+
+      const parsedRound = roundQuerySchema.safeParse(req.query.round);
+      if (!parsedRound.success) {
+        sendError(res, 400, 'invalid_body', 'Invalid round');
+        return;
+      }
+
+      const { participantId } = auth;
+      let outcome!: VoteActionResult;
+      const updated = await store.update(auth.session.id, (session) => {
+        const result = clearVote(session, participantId, parsedRound.data);
+        outcome = result;
+        return result.outcome === 'ok' ? result.session : session;
+      });
+
+      if (outcome.outcome === 'stale_round') {
+        sendError(res, 409, 'stale_round', 'Round is stale', {
+          snapshot: buildSessionSnapshot(updated, participantId),
+        });
+        return;
+      }
+
+      await notifier.notify(auth.session.id);
+      const body: ApiResponse<null> = { data: null, error: null };
+      res.status(200).json(body);
+    },
+  );
 
   app.get('/api/sessions/:id/events', async (req: Request, res: Response) => {
     const sessionId = getSessionIdParam(req);
