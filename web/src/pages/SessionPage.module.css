@@ -29,21 +29,26 @@
 }
 
 .card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font: inherit;
   font-weight: 600;
+  font-size: 15px;
   color: var(--text);
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 8px;
-  min-width: 44px;
-  padding: 10px 12px;
+  min-width: 48px;
+  height: 48px;
+  padding: 0 8px;
   cursor: pointer;
 }
 
 .cardSelected {
+  color: var(--accent-contrast);
+  background: var(--accent);
   border-color: var(--accent);
-  border-width: 2px;
-  color: var(--accent);
 }
 
 .cardFooter {
